@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	#canvas {
+		z-index: 1;
+		position: absolute;
+		border: 1px solid;
+	}
+</style>
+<script>
+
+const TASTE_THE_RAINBOW = false
+const SIZE = 700 // px
+
+window.onload = function () {
+	const canvas = document.getElementById('canvas')
+	canvas.width = SIZE
+	canvas.height = SIZE
+	const ctx = canvas.getContext('2d')
+
+	function setColor (ctx, r = 0, g = 0, b = 0, a = 255) {
+		ctx.fillStyle = "rgba("+r+","+g+","+b+","+(a/255)+")"
+	}
+
+	// Based on https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+	// I really wish I would have gone this route when I was playing around with Arduino RGB LEDs
+	function hsvToRgb (h, s, v) {
+	  const hInt = parseInt(h*6)
+	  const f = h*6 - hInt
+	  const p = v * (1 - s)
+	  const q = v * (1 - f*s)
+	  const t = v * (1 - (1 - f) * s)
+	  switch (hInt) {
+	  	case 0:
+	  	  [r, g, b] = [v, t, p]
+	  	  break
+	  	case 1:
+	  	  [r, g, b] = [q, v, p]
+	  	  break
+	  	case 2:
+	  	  [r, g, b] = [p, v, t]
+	  	  break
+	  	case 3:
+	  	  [r, g, b] = [p, q, v]
+	  	  break
+	  	case 4:
+	  	  [r, g, b] = [t, p, v]
+	  	  break
+	  	case 5:
+	  	  [r, g, b] = [v, p, q]
+	  	  break
+	  }
+	  return {r: parseInt(r*256), g: parseInt(g*256), b: parseInt(b*256)}
+	}
+
+	// TODO: this would be fun to play with
+	// function goldenRatioRand (previousRand) {
+	//	// golden ratio conjugate: 0.61833988749895
+	//	return (Math.random() + 0.61833988749895) % 1
+	//}
+
+	function addPixel (ctx, x, y, h, s, v) {
+		const RGB = hsvToRgb(h, s, v)
+		setColor(ctx, RGB.r, RGB.g, RGB.b)
+		// const RGB = Object.values(hsvToRgb(h, s, v))
+		// setColor(ctx, ...RGB)
+		ctx.fillRect(x*2, y*2, 2, 2)
+	}
+
+	function build (width, height, rainbowMode) {
+		width = Math.floor(width / 2)
+		height = Math.floor(height / 2)
+		const squareCount = width * height // assuming it is a square
+		const centerX = Math.floor(width / 2)
+		const centerY = Math.floor(height / 2)
+
+		let index = 1
+		let layer = 1
+		let h
+		const s = rainbowMode ? 0.5 : 1
+		const v = rainbowMode ? 0.95 : 0
+		while (layer < width / 2) {
+			console.log(`${Math.round((index / squareCount) * 2 * 100) + 1}%`) // Print progress percentage
+			h = rainbowMode ? (index / squareCount) : 0.99
+			if (layer % 2) {
+				// Go UP
+				let up = 0 - layer
+				for(; up < layer + 1; up++) {
+					if (isPrime(index++)) {
+						addPixel(ctx, centerX + layer, centerY - up, h, s, v)
+					}
+				}
+				// go LEFT
+				for(let left = 0 - layer; left < layer + 1; left++) {
+					if (isPrime(index++)) {
+						addPixel(ctx, centerX - left, centerY + up, h, s, v)
+					}
+				}
+			} else {
+				// go DOWN
+				let down = 0 - layer
+				for(; down < layer + 1; down++) {
+					if (isPrime(index++)) {
+						addPixel(ctx, centerX - layer, centerY - down, h, s, v)
+					}
+				}
+				// go RIGHT
+				for(let right = 0 - layer; right < layer + 1; right++) {
+					if (isPrime(index++)) {
+						addPixel(ctx, centerX - right, centerY - down, h, s, v)
+					}
+				}
+			}		
+			layer++
+		}
+	}
+
+	function isPrime (num) {
+		for(let i = 2; i < num; i++) {
+			if(num % i === 0) {
+				return false
+			}
+		}
+		return num !== 1
+	}
+
+	build(SIZE, SIZE, TASTE_THE_RAINBOW)
+
+} // end window.onload()
+</script>
+</head>
+
+<body>
+	<canvas id="canvas"></canvas>
+</body>
+</html>
